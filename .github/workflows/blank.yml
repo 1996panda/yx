@@ -1,31 +1,55 @@
-# File: .github/workflows/repo-sync.yml
-name: A🔄自动同步🔄A
-on:
-  schedule:
-    - cron: '0 */1 * * *'
-  workflow_dispatch:
-  watch:
-    types: started
-  repository_dispatch:
-    types: repo-sync
-jobs:
-  repo-sync:
-    env:
-      PAT: ${{ github.event.client_payload.PAT || secrets.PAT }} #此处PAT需要申请，教程详见：https://www.jianshu.com/p/bb82b3ad1d11
-      dst_key: ${{ secrets.GITEE_PRIVATE_KEY }} # 我自己同步到gitee使用，其他人可忽略
-    runs-on: ubuntu-latest
-    if: github.event.repository.owner.id == github.event.sender.id
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
+import requests
+import base64
 
-      - name: 开始🔄自动同步🔄
-        uses: repo-sync/github-sync@v2
-        if: env.PAT
-        with:
-          source_repo: "http://oss.illii.cn/jd-unicom/jd.sh"
-          source_branch: "main"
-          destination_branch: "main"
-          github_token: ${{ github.event.client_payload.PAT || secrets.PAT }}
-      
+token_online = ['']
+
+appId = [''] 
+
+
+url_1 = 'https://m.client.10010.com/welfare-mall-front/mobile/show/bj2207/v1'
+
+def start():
+    for Token_online,appid in zip(token_online,appId):
+        res = requests.post('https://m.client.10010.com/mobileService/onLine.htm', data='token_online=' + Token_online + '&appId=' + appid + '&version=iphone_c@7.0500').json()
+        if res['code'] in '0':
+            cookie = 'ecs_token=' + res['ecs_token']
+            phone = res['default']
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Cookie': cookie,
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 unicom{version:iphone_c@7.0500}{systemVersion:dis}{yw_code:}'
+            }
+            a = phone + '|2380'
+            b = base64.b64encode(a.encode('utf-8'))
+            res_1 = requests.get(url_1, headers=headers)
+            number = res_1.json()['resdata']['Fnumber']
+            x = '8a29ac8a75a30e4e0175ba89c3dc1009'
+            y = '8a29ac8a75a30e4e0175b721ae490a5a'
+            z = '8a29ac89747dfeed01747e48e50c0024'
+            if int(number) > 500:
+                if int(number) > 2000:
+                    test = z
+                elif int(number) > 1000:
+                    test = y
+                else:
+                    test = x
+                res2 = requests.get('https://m.client.10010.com/welfare-mall-front/mobile/show/bj2200/v2/' + test + '/0000')
+                SHOP_INTEGRAL = res2.json()['resdata']['goods']['SHOP_INTEGRAL']
+                GOODS_NAME = res2.json()['resdata']['goods']['GOODS_NAME']
+                res_2 = requests.post('https://m.client.10010.com/welfare-mall-front/mobile/api/whetherNeedVerificationCodeNew/v1', headers=headers, data='reqdata={"pip":"0.0.0.0","goodsIdOrOrderNo":"' + test + '","phone":"' + str(b,'utf-8') + '"}')
+                #print(GOODS_NAME + phone + res_2.json()['msg'])
+                res__2 = requests.post('https://m.client.10010.com/welfare-mall-front/mobile/api/bj2402/v1', headers=headers, data='reqdata={"goodsId":"' + test + '","reChangeNo":"' + phone + '","saleTypes":"TY","points":' + SHOP_INTEGRAL + ',"smsCode":null,"imei":"","sourceChannel":"KYJF9990000010001","proFlag":"","scene":"","promoterCode":"","sign":"","oneid":"","twoid":"","threeid":"","maxcash":"","floortype":"undefined","launchId":""}')
+                print(GOODS_NAME + phone + res__2.json()['msg'])
+
+            else:
+                print(phone + '_number*' + str(number))
+        else:
+            print(res['msg'])
+        
+        
+
+def main_handler(event, context):
+    return start()
+
+if __name__ == '__main__':
+    start()
